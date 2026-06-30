@@ -14,7 +14,7 @@ pipeline {
             }
         }
 
-        stage('Build Maven Project') {
+        stage('Build Maven') {
             steps {
                 sh 'mvn clean package -DskipTests'
             }
@@ -28,22 +28,11 @@ pipeline {
 
         stage('Push Docker Image') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-creds',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
-
-                    sh '''
-                    echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                    docker push ${IMAGE_NAME}:${IMAGE_TAG}
-                    docker logout
-                    '''
-                }
+                sh 'docker push ${IMAGE_NAME}:${IMAGE_TAG}'
             }
         }
 
-        stage('Deploy to Kubernetes') {
+        stage('Deploy') {
             steps {
                 sh '''
                 kubectl delete deployment demo --ignore-not-found=true
@@ -57,16 +46,6 @@ pipeline {
             steps {
                 sh 'kubectl get all'
             }
-        }
-    }
-
-    post {
-        success {
-            echo 'Pipeline Executed Successfully!'
-        }
-
-        failure {
-            echo 'Pipeline Failed!'
         }
     }
 }
